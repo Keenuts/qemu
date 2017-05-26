@@ -42,6 +42,13 @@ struct virtio_gpu_simple_resource {
     QTAILQ_ENTRY(virtio_gpu_simple_resource) next;
 };
 
+struct virtio_gpu_cmd_api_forwarding {
+	struct virtio_gpu_ctrl_hdr hdr;
+    uint32_t function;
+#define APIFWD_BUFFER_SIZE 64
+    uint8_t data[APIFWD_BUFFER_SIZE];
+};
+
 struct virtio_gpu_scanout {
     QemuConsole *con;
     DisplaySurface *ds;

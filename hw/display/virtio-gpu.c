@@ -730,6 +730,17 @@ virtio_gpu_resource_detach_backing(VirtIOGPU *g,
     virtio_gpu_cleanup_mapping(res);
 }
 
+static void
+virtio_gpu_api_forwarding(VirtIOGPU *g,
+                          struct virtio_gpu_ctrl_command *cmd)
+{
+    struct virtio_gpu_cmd_api_forwarding res;
+
+    VIRTIO_GPU_FILL_CMD(res);
+    printf("APIFWD: %u\n", res.function);
+    virgl_renderer_api_forwarding(res.function, res.data);
+}
+
 static void virtio_gpu_simple_process_cmd(VirtIOGPU *g,
                                           struct virtio_gpu_ctrl_command *cmd)
 {
@@ -759,6 +770,9 @@ static void virtio_gpu_simple_process_cmd(VirtIOGPU *g,
         break;
     case VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING:
         virtio_gpu_resource_detach_backing(g, cmd);
+        break;
+    case VIRTIO_GPU_CMD_API_FORWARDING:
+        virtio_gpu_api_forwarding(g, cmd);
         break;
     default:
         cmd->error = VIRTIO_GPU_RESP_ERR_UNSPEC;
