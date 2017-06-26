@@ -42,12 +42,13 @@ struct virtio_gpu_simple_resource {
     QTAILQ_ENTRY(virtio_gpu_simple_resource) next;
 };
 
+#define APIFWD_BUFFER_SIZE 64
 struct virtio_gpu_cmd_api_forwarding {
 	struct virtio_gpu_ctrl_hdr hdr;
+    uint32_t ctx_id;
     uint32_t function;
-#define APIFWD_BUFFER_SIZE 64
     uint8_t data[APIFWD_BUFFER_SIZE];
-};
+} __attribute__((__packed__));
 
 struct virtio_gpu_scanout {
     QemuConsole *con;
@@ -143,11 +144,13 @@ extern const GraphicHwOps virtio_gpu_ops;
                     VIRTIO_PCI_FLAG_USE_IOEVENTFD_BIT, false), \
     DEFINE_PROP_UINT32("vectors", _state, nvectors, 3)
 
-#define VIRTIO_GPU_FILL_CMD(out) do {                                   \
+#define VIRTIO_GPU_FILL_CMD(cmd, out) do {                              \
         size_t s;                                                       \
         s = iov_to_buf(cmd->elem.out_sg, cmd->elem.out_num, 0,          \
                        &out, sizeof(out));                              \
         if (s != sizeof(out)) {                                         \
+            printf("[ %s ] size not OK. received %lu instead of %lu\n", \
+                    __func__, s, sizeof(out));                          \
             qemu_log_mask(LOG_GUEST_ERROR,                              \
                           "%s: command size incorrect %zu vs %zu\n",    \
                           __func__, s, sizeof(out));                    \
