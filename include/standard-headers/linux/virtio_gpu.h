@@ -85,8 +85,9 @@ enum virtio_gpu_ctrl_type {
 	VIRTIO_GPU_RESP_ERR_INVALID_CONTEXT_ID,
 	VIRTIO_GPU_RESP_ERR_INVALID_PARAMETER,
 
-    /*api forwarding */
+    /* custom */
     VIRTIO_GPU_CMD_API_FORWARDING,
+    VIRTIO_GPU_CMD_SHOW_DEBUG,
 };
 
 #define VIRTIO_GPU_FLAG_FENCE (1 << 0)

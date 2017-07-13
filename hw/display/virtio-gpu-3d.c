@@ -35,6 +35,9 @@ static void virgl_cmd_create_resource_2d(VirtIOGPU *g,
     trace_virtio_gpu_cmd_res_create_2d(c2d.resource_id, c2d.format,
                                        c2d.width, c2d.height);
 
+    printf("%s : resource ID=0x%x\n", __func__, c2d.resource_id);
+    printf("%x\n%x\n%x\n", c2d.format, c2d.width, c2d.height);
+
     args.handle = c2d.resource_id;
     args.target = 2;
     args.format = c2d.format;
@@ -46,7 +49,8 @@ static void virgl_cmd_create_resource_2d(VirtIOGPU *g,
     args.last_level = 0;
     args.nr_samples = 0;
     args.flags = VIRTIO_GPU_RESOURCE_FLAG_Y_0_TOP;
-    virgl_renderer_resource_create(&args, NULL, 0);
+    int res = virgl_renderer_resource_create(&args, NULL, 0);
+    printf("[R] return %d\n", res);
 }
 
 static void virgl_cmd_create_resource_3d(VirtIOGPU *g,
@@ -59,6 +63,12 @@ static void virgl_cmd_create_resource_3d(VirtIOGPU *g,
     trace_virtio_gpu_cmd_res_create_3d(c3d.resource_id, c3d.format,
                                        c3d.width, c3d.height, c3d.depth);
 
+    printf("%s : resource ID=0x%x\n", __func__, c3d.resource_id);
+    printf("%x\n%x\n%x\n%x\n%x\n%x\n%x\n%x\n%x\n%x\n",
+    c3d.target, c3d.format, c3d.bind, c3d.width, c3d.height,
+    c3d.depth, c3d.array_size, c3d.last_level, c3d.nr_samples,
+    c3d.flags);
+
     args.handle = c3d.resource_id;
     args.target = c3d.target;
     args.format = c3d.format;
@@ -70,7 +80,8 @@ static void virgl_cmd_create_resource_3d(VirtIOGPU *g,
     args.last_level = c3d.last_level;
     args.nr_samples = c3d.nr_samples;
     args.flags = c3d.flags;
-    virgl_renderer_resource_create(&args, NULL, 0);
+    int res = virgl_renderer_resource_create(&args, NULL, 0);
+    printf("[R] return %d\n", res);
 }
 
 static void virgl_cmd_resource_unref(VirtIOGPU *g,
@@ -86,6 +97,7 @@ static void virgl_cmd_resource_unref(VirtIOGPU *g,
     virgl_renderer_resource_detach_iov(unref.resource_id,
                                        &res_iovs,
                                        &num_iovs);
+    printf("%s : resource ID=0x%x\n", __func__, unref.resource_id);
     if (res_iovs != NULL && num_iovs != 0) {
         virtio_gpu_cleanup_mapping_iov(res_iovs, num_iovs);
     }
@@ -101,9 +113,10 @@ static void virgl_cmd_context_create(VirtIOGPU *g,
     trace_virtio_gpu_cmd_ctx_create(cc.hdr.ctx_id,
                                     cc.debug_name);
 
-    printf("[%s] Creating context.\n", __FUNCTION__);
-    virgl_renderer_context_create(cc.hdr.ctx_id, cc.nlen,
+    printf("[%s] Creating context id=%d.\n", __FUNCTION__, cc.hdr.ctx_id);
+    int res = virgl_renderer_context_create(cc.hdr.ctx_id, cc.nlen,
                                   cc.debug_name);
+    printf("[R] return %d\n", res);
 }
 
 static void virgl_cmd_context_destroy(VirtIOGPU *g,
@@ -114,6 +127,7 @@ static void virgl_cmd_context_destroy(VirtIOGPU *g,
     VIRTIO_GPU_FILL_CMD(cmd, cd);
     trace_virtio_gpu_cmd_ctx_destroy(cd.hdr.ctx_id);
 
+    printf("[%s] Destroying context id=%d.\n", __FUNCTION__, cd.hdr.ctx_id);
     virgl_renderer_context_destroy(cd.hdr.ctx_id);
 }
 
@@ -227,7 +241,8 @@ static void virgl_cmd_submit_3d(VirtIOGPU *g,
         printf("%s | buffer[%d]=0x%x\n", __func__, i, ((int*)buf)[i]);
 
     // submit(void *buffer, int Virgl_CTX, ndw);
-    virgl_renderer_submit_cmd(buf, cs.hdr.ctx_id, cs.size / 4);
+    int res = virgl_renderer_submit_cmd(buf, cs.hdr.ctx_id, cs.size / 4);
+    printf("[R] return %d\n", res);
 
 out:
     g_free(buf);
@@ -237,6 +252,8 @@ out:
 static void virgl_cmd_transfer_to_host_2d(VirtIOGPU *g,
                                           struct virtio_gpu_ctrl_command *cmd)
 {
+    printf("--> %s\n", __func__);
+
     struct virtio_gpu_transfer_to_host_2d t2d;
     struct virtio_gpu_box box;
 
@@ -250,13 +267,16 @@ static void virgl_cmd_transfer_to_host_2d(VirtIOGPU *g,
     box.h = t2d.r.height;
     box.d = 1;
 
-    virgl_renderer_transfer_write_iov(t2d.resource_id,
+    printf("%s : resource ID=0x%x\n", __func__, t2d.resource_id);
+    int res = virgl_renderer_transfer_write_iov(t2d.resource_id,
                                       0,
                                       0,
                                       0,
                                       0,
                                       (struct virgl_box *)&box,
                                       t2d.offset, NULL, 0);
+    printf("[R] return %d\n", res);
+    printf("<-- %s\n", __func__);
 }
 
 static void virgl_cmd_transfer_to_host_3d(VirtIOGPU *g,
@@ -267,13 +287,16 @@ static void virgl_cmd_transfer_to_host_3d(VirtIOGPU *g,
     VIRTIO_GPU_FILL_CMD(cmd, t3d);
     trace_virtio_gpu_cmd_res_xfer_toh_3d(t3d.resource_id);
 
-    virgl_renderer_transfer_write_iov(t3d.resource_id,
+    printf("%s : resource ID=0x%x\n", __func__, t3d.resource_id);
+
+    int res = virgl_renderer_transfer_write_iov(t3d.resource_id,
                                       t3d.hdr.ctx_id,
                                       t3d.level,
                                       t3d.stride,
                                       t3d.layer_stride,
                                       (struct virgl_box *)&t3d.box,
                                       t3d.offset, NULL, 0);
+    printf("[R] return %d\n", res);
 }
 
 static void
@@ -284,14 +307,16 @@ virgl_cmd_transfer_from_host_3d(VirtIOGPU *g,
 
     VIRTIO_GPU_FILL_CMD(cmd, tf3d);
     trace_virtio_gpu_cmd_res_xfer_fromh_3d(tf3d.resource_id);
+    printf("%s : resource ID=0x%x\n", __func__, tf3d.resource_id);
 
-    virgl_renderer_transfer_read_iov(tf3d.resource_id,
+    int res = virgl_renderer_transfer_read_iov(tf3d.resource_id,
                                      tf3d.hdr.ctx_id,
                                      tf3d.level,
                                      tf3d.stride,
                                      tf3d.layer_stride,
                                      (struct virgl_box *)&tf3d.box,
                                      tf3d.offset, NULL, 0);
+    printf("[R] return %d\n", res);
 }
 
 
@@ -305,6 +330,8 @@ static void virgl_resource_attach_backing(VirtIOGPU *g,
     VIRTIO_GPU_FILL_CMD(cmd, att_rb);
     trace_virtio_gpu_cmd_res_back_attach(att_rb.resource_id);
 
+    printf("%s : resource ID=0x%x\n", __func__, att_rb.resource_id);
+
     ret = virtio_gpu_create_mapping_iov(&att_rb, cmd, NULL, &res_iovs);
     if (ret != 0) {
         cmd->error = VIRTIO_GPU_RESP_ERR_UNSPEC;
@@ -313,6 +340,7 @@ static void virgl_resource_attach_backing(VirtIOGPU *g,
 
     ret = virgl_renderer_resource_attach_iov(att_rb.resource_id,
                                              res_iovs, att_rb.nr_entries);
+    printf("[R] return %d\n", ret);
 
     if (ret != 0)
         virtio_gpu_cleanup_mapping_iov(res_iovs, att_rb.nr_entries);
@@ -331,6 +359,7 @@ static void virgl_resource_detach_backing(VirtIOGPU *g,
     virgl_renderer_resource_detach_iov(detach_rb.resource_id,
                                        &res_iovs,
                                        &num_iovs);
+    printf("%s : resource ID=0x%x\n", __func__, detach_rb.resource_id);
     if (res_iovs == NULL || num_iovs == 0) {
         return;
     }
@@ -347,6 +376,8 @@ static void virgl_cmd_ctx_attach_resource(VirtIOGPU *g,
     trace_virtio_gpu_cmd_ctx_res_attach(att_res.hdr.ctx_id,
                                         att_res.resource_id);
 
+    printf("%s : resource ID=0x%x\n", __func__, att_res.resource_id);
+    printf("%d\n", att_res.hdr.ctx_id);
     virgl_renderer_ctx_attach_resource(att_res.hdr.ctx_id, att_res.resource_id);
 }
 
@@ -359,6 +390,7 @@ static void virgl_cmd_ctx_detach_resource(VirtIOGPU *g,
     trace_virtio_gpu_cmd_ctx_res_detach(det_res.hdr.ctx_id,
                                         det_res.resource_id);
 
+    printf("%s : resource ID=0x%x\n", __func__, det_res.resource_id);
     virgl_renderer_ctx_detach_resource(det_res.hdr.ctx_id, det_res.resource_id);
 }
 
@@ -424,6 +456,17 @@ virtio_gpu_api_forwarding(VirtIOGPU *g,
     printf("<-- %s\n", __func__);
 }
 
+static void
+virtio_gpu_show_debug(VirtIOGPU *g,
+                          struct virtio_gpu_ctrl_command *cmd)
+{
+    struct virtio_gpu_cmd_show_debug res;
+    VIRTIO_GPU_FILL_CMD(cmd, res);
+
+    res.message[SHOWDEBUG_SIZE - 1] = 0;
+    printf("[FORCE] DbgPrint: %s\n", res.message);
+}
+
 void virtio_gpu_virgl_process_cmd(VirtIOGPU *g,
 					struct virtio_gpu_ctrl_command *cmd)
 {
@@ -438,86 +481,88 @@ void virtio_gpu_virgl_process_cmd(VirtIOGPU *g,
     virgl_renderer_force_ctx_0();
     switch (cmd->cmd_hdr.type) {
     case VIRTIO_GPU_CMD_CTX_CREATE:
-        printf("[%s] CTX_CREATE.\n", __func__);
+        printf("[%s] [%d] CTX_CREATE.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_context_create(g, cmd);
         break;
     case VIRTIO_GPU_CMD_CTX_DESTROY:
-        printf("[%s] CTX_DESTROY.\n", __func__);
+        printf("[%s] [%d] CTX_DESTROY.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_context_destroy(g, cmd);
         break;
     case VIRTIO_GPU_CMD_RESOURCE_CREATE_2D:
-        printf("[%s] RESOURCE_CREATE_2D.\n", __func__);
+        printf("[%s] [%u] RESOURCE_CREATE_2D.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_create_resource_2d(g, cmd);
         break;
     case VIRTIO_GPU_CMD_RESOURCE_CREATE_3D:
-        printf("[%s] RESOURCE_CREATE_3D.\n", __func__);
+        printf("[%s] [%u] RESOURCE_CREATE_3D.\n|", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_create_resource_3d(g, cmd);
         break;
     case VIRTIO_GPU_CMD_SUBMIT_3D:
-        printf("[%s] CMD_SUBMIT_3D.\n", __func__);
+        printf("[%s] [%d] CMD_SUBMIT_3D.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_submit_3d(g, cmd);
         break;
     case VIRTIO_GPU_CMD_TRANSFER_TO_HOST_2D:
+        printf("[%s] [%d] TRANSFER_TO_HOST_2D.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_transfer_to_host_2d(g, cmd);
         break;
     case VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D:
-        printf("[%s] TRANSFER_TO_HOST_3D.\n", __func__);
+        printf("[%s] [%d] TRANSFER_TO_HOST_3D.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_transfer_to_host_3d(g, cmd);
         break;
     case VIRTIO_GPU_CMD_TRANSFER_FROM_HOST_3D:
-        printf("[%s] TRANSFER_FROM_HOST_3D.\n", __func__);
+        printf("[%s] [%d] TRANSFER_FROM_HOST_3D.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_transfer_from_host_3d(g, cmd);
         break;
     case VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING:
-        printf("[%s] ATTACH_BACKING.\n", __func__);
+        printf("[%s] [%d] ATTACH_BACKING.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_resource_attach_backing(g, cmd);
         break;
     case VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING:
-        printf("[%s] DETACH_BACKING.\n", __func__);
+        printf("[%s] [%d] DETACH_BACKING.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_resource_detach_backing(g, cmd);
         break;
     case VIRTIO_GPU_CMD_SET_SCANOUT:
-        printf("[%s] SET_SCANOUT.\n", __func__);
+        printf("[%s] [%d] SET_SCANOUT.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_set_scanout(g, cmd);
         break;
     case VIRTIO_GPU_CMD_RESOURCE_FLUSH:
         virgl_cmd_resource_flush(g, cmd);
        break;
     case VIRTIO_GPU_CMD_RESOURCE_UNREF:
-        printf("[%s] RESOURCE_UNREF.\n", __func__);
+        printf("[%s] [%d] RESOURCE_UNREF.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_resource_unref(g, cmd);
         break;
     case VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE:
-        printf("[%s] ATTACH_RESOURCE.\n", __func__);
+        printf("[%s] [%d] ATTACH_RESOURCE.\n", __func__, cmd->cmd_hdr.ctx_id);
         /* TODO add security */
         virgl_cmd_ctx_attach_resource(g, cmd);
         break;
     case VIRTIO_GPU_CMD_CTX_DETACH_RESOURCE:
-        printf("[%s] DETACH_RESOURCE.\n", __func__);
+        printf("[%s] [%d] DETACH_RESOURCE.\n", __func__, cmd->cmd_hdr.ctx_id);
         /* TODO add security */
         virgl_cmd_ctx_detach_resource(g, cmd);
         break;
     case VIRTIO_GPU_CMD_GET_CAPSET_INFO:
-        printf("[%s] GET_CAPSET_INFO.\n", __func__);
+        printf("[%s] [%d] GET_CAPSET_INFO.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_get_capset_info(g, cmd);
         break;
     case VIRTIO_GPU_CMD_GET_CAPSET:
-        printf("[%s] GET_CAPSET.\n", __func__);
+        printf("[%s] [%d] GET_CAPSET.\n", __func__, cmd->cmd_hdr.ctx_id);
         virgl_cmd_get_capset(g, cmd);
         break;
 
     case VIRTIO_GPU_CMD_GET_DISPLAY_INFO:
-        printf("[%s] GET_DISPLAY_INFO.\n", __func__);
+        printf("[%s] [%d] GET_DISPLAY_INFO.\n", __func__, cmd->cmd_hdr.ctx_id);
         virtio_gpu_get_display_info(g, cmd);
         break;
     case VIRTIO_GPU_CMD_API_FORWARDING:
-        printf("[%s] API FORWARDING.\n", __func__);
+        printf("[%s] [%d] API FORWARDING.\n", __func__, cmd->cmd_hdr.ctx_id);
         virtio_gpu_api_forwarding(g, cmd);
         break;
+    case VIRTIO_GPU_CMD_SHOW_DEBUG:
+        virtio_gpu_show_debug(g, cmd);
+        break;
     default:
-        printf("[%s] Bas command received. Received %d instead of %d\n", __func__,
-		cmd->cmd_hdr.type, VIRTIO_GPU_CMD_API_FORWARDING);
-        cmd->error = VIRTIO_GPU_RESP_ERR_UNSPEC;
+        printf("[%s] [%d] Bad command received: %d\n", __func__, cmd->cmd_hdr.ctx_id, cmd->cmd_hdr.type);
         break;
     }
 

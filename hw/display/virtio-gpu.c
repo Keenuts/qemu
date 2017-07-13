@@ -617,6 +617,7 @@ int virtio_gpu_create_mapping_iov(struct virtio_gpu_resource_attach_backing *ab,
     }
 
     esize = sizeof(*ents) * ab->nr_entries;
+
     ents = g_malloc(esize);
     s = iov_to_buf(cmd->elem.out_sg, cmd->elem.out_num,
                    sizeof(*ab), ents, esize);
@@ -636,6 +637,7 @@ int virtio_gpu_create_mapping_iov(struct virtio_gpu_resource_attach_backing *ab,
         hwaddr len = ents[i].length;
         (*iov)[i].iov_len = ents[i].length;
         (*iov)[i].iov_base = cpu_physical_memory_map(ents[i].addr, &len, 1);
+
         if (addr) {
             (*addr)[i] = ents[i].addr;
         }

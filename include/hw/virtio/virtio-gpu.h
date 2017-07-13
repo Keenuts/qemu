@@ -50,6 +50,12 @@ struct virtio_gpu_cmd_api_forwarding {
     uint8_t data[APIFWD_BUFFER_SIZE];
 } __attribute__((__packed__));
 
+#define SHOWDEBUG_SIZE 255
+struct virtio_gpu_cmd_show_debug {
+   struct virtio_gpu_ctrl_hdr hdr;
+   char message[SHOWDEBUG_SIZE];
+} __attribute__((__packed__));
+
 struct virtio_gpu_scanout {
     QemuConsole *con;
     DisplaySurface *ds;
